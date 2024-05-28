@@ -49,36 +49,34 @@ function Chat() {
   }
 
   const imageUploadCancel = () => {
-
+    setImg({
+      file: null,
+      url: '',
+    });
   }
+
 
   const handleSend = async () => {
     if (text === '') return '';
 
+    console.log(text);
+
     try {
-
-
-      const userIDs = [currentUser.id, user.id];
-      userIDs.forEach(async (id) => {
-        const userChatsRef = doc(db, 'userchats', id);
-        const userChatsSnapshot = await getDoc(userChatsRef);
-        if (userChatsSnapshot.exists()) {
-          const userChatsData = userChatsSnapshot.data();
-          const chatIndex = userChatsData.chats.findIndex((c) => c.chatId === chatId);
-          userChatsData.chats[chatIndex].lastMessage = text;
-          userChatsData.chats[chatIndex].isSeen = id === currentUser.id;
-          userChatsData.chats[chatIndex].updatedAt = Date.now();
-
-          await updateDoc(userChatsRef, {
-            chats: userChatsData.chats,
-          });
-        }
+      await updateDoc(doc(db, 'chats', chatId), {
+        messages: arrayUnion({
+          senderId: currentUser.id,
+          text,
+          createdAt: new Date()
+        }),
       });
+
     } catch (err) {
-      console.log(err);
+      console.error("Error updating user chats:", err);
     }
+
     setText('');
   };
+
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -127,7 +125,7 @@ function Chat() {
           <div className={message.senderId === currentUser?.id ? "message own" : "message"} key={message?.createdAt?.seconds}>
             <div className="texts">
               {message.img && < img src={message.img} alt="" />}
-              {message.text && <p>{message.text}</p>}
+              {message?.text?.length != 0 && <p>{message.text}</p>}
               <span>{new Date(message.createdAt.seconds * 1000).toLocaleString()}</span>
             </div>
           </div>
