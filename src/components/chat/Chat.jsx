@@ -23,22 +23,40 @@ function Chat() {
   const { currentUser } = useUserStore();
   const endRef = useRef(null);
 
-  const handleSend = async () => {
-    if (text === '') return '';
+  const imageUpload = async () => {
     let imgUrl = null;
     try {
       if (img.file) {
         imgUrl = await upload(img.file);
-        console.log('Image URL:', imgUrl); // Log the image URL to verify it's correct
+        console.log('Image URL:', imgUrl);
+        await updateDoc(doc(db, 'chats', chatId), {
+          messages: arrayUnion({
+            senderId: currentUser.id,
+            text,
+            createdAt: new Date(),
+            ...(imgUrl && { img: imgUrl }),
+          }),
+        });
+        setImg({
+          file: null,
+          url: '',
+        });
       }
-      await updateDoc(doc(db, 'chats', chatId), {
-        messages: arrayUnion({
-          senderId: currentUser.id,
-          text,
-          createdAt: new Date(),
-          ...(imgUrl && { img: imgUrl }),
-        }),
-      });
+    } catch (err) {
+      console.log(err);
+    }
+
+  }
+
+  const imageUploadCancel = () => {
+
+  }
+
+  const handleSend = async () => {
+    if (text === '') return '';
+
+    try {
+
 
       const userIDs = [currentUser.id, user.id];
       userIDs.forEach(async (id) => {
@@ -59,11 +77,6 @@ function Chat() {
     } catch (err) {
       console.log(err);
     }
-
-    setImg({
-      file: null,
-      url: '',
-    });
     setText('');
   };
 
@@ -113,15 +126,21 @@ function Chat() {
         {chat?.messages?.map((message) => (
           <div className={message.senderId === currentUser?.id ? "message own" : "message"} key={message?.createdAt?.seconds}>
             <div className="texts">
-              {message.img && <img src={message.img} alt="" />}
-              <p>{message.text}</p>
+              {message.img && < img src={message.img} alt="" />}
+              {message.text && <p>{message.text}</p>}
               <span>{new Date(message.createdAt.seconds * 1000).toLocaleString()}</span>
             </div>
           </div>
         ))}
-        {img.url && (<div className="message own">
-          <img src={img.url} alt="" />
-        </div>)}
+        {img.file && (
+          <div className="preview-container">
+            <img src={img.url} alt="Preview" className="preview-image" />
+            <div className="preview-buttons">
+              <button onClick={imageUploadCancel}>Cancel</button>
+              <button onClick={imageUpload}>Send</button>
+            </div>
+          </div>
+        )}
         <div ref={endRef}></div>
       </div>
       <div className="bottom">
