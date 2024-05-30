@@ -1,5 +1,6 @@
 import React from 'react'
 import "./login.css"
+
 import { auth } from '../../lib/firebase'
 import { db } from '../../lib/firebase'
 import { useState } from 'react'
@@ -29,6 +30,7 @@ function Login() {
     const {email,password}=Object.fromEntries(formData);
     try{
       await signInWithEmailAndPassword(auth,email,password);
+      window.location.reload();
     }catch(err){
       console.log(err);
       toast.error(err.message);
@@ -77,7 +79,7 @@ function Login() {
         <form onSubmit={handleLogin}>
           <input type="text" placeholder='Email' name="email" />
           <input type="password" placeholder="Password" name="password"/>
-          <button disabled={loading}>{loading ? "Loding" :"Sign Up"}</button>
+          <button disabled={loading}>{loading ? "Loding" :"Sign In"}</button>
         </form>
       </div>
       <div className="separator"></div>

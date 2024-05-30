@@ -226,3 +226,35 @@
 .preview-buttons button:hover {
   background-color: rgba(255, 255, 255, 1);
 }
+.camera-container {
+  position: absolute; /* Use absolute positioning within a relative parent */
+  bottom: 20px; /* Adjust as needed */
+  /* Adjust as needed */
+  width: 25%; 
+  /* Adjust as needed for smaller screens */
+  /* Let the height adjust based on content */
+  border: 2px solid #ddd; /* Optional: to visually see the boundary */
+  background-color: white; /* Ensure it's not transparent */
+  z-index: 10; /* Ensure the camera is on top */
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* Optional: add shadow for better visibility */
+}
+
+.camera-close-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background-color: #fff;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 4px;
+  z-index: 20; /* Ensure the button is on top of the camera */
+}
+
+/* Ensure the chat component has a relative positioning to be the reference for the camera */
+
+
+/* Add media queries for better responsiveness */
+
+

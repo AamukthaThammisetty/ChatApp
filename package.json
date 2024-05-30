@@ -14,7 +14,10 @@
     "firebase": "^10.12.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-html5-camera-photo": "^1.5.11",
     "react-toastify": "^10.0.5",
+    "react-webcam": "^7.2.0",
+    "vmsg": "^0.4.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

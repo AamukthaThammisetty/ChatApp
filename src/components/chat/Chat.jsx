@@ -1,82 +1,134 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import "./chat.css";
-import { getDoc } from 'firebase/firestore';
-import { arrayUnion } from 'firebase/firestore';
-import { updateDoc } from 'firebase/firestore';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { useState, useRef, useEffect } from 'react';
+import Camera from 'react-html5-camera-photo';
+import { getDoc, updateDoc, doc, onSnapshot, arrayUnion } from 'firebase/firestore';
+import 'react-html5-camera-photo/build/css/index.css';
 import EmojiPicker from 'emoji-picker-react';
 import { useChatStore } from '../../lib/chatStore';
 import { db } from '../../lib/firebase';
 import { useUserStore } from '../../lib/userStore';
 import upload from '../../lib/upload';
+import vmsg from 'vmsg';
 
-function Chat() {
+const Chat = () => {
   const [open, setOpen] = useState(false);
-  const [img, setImg] = useState({
-    file: null,
-    url: '',
-  });
+  const [img, setImg] = useState({ file: null, url: '' });
+  const [camImg, setCamImg] = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
   const [text, setText] = useState('');
   const [chat, setChat] = useState();
   const { chatId, user } = useChatStore();
   const { currentUser } = useUserStore();
+  const [isCamOpen, setIsCamOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const endRef = useRef(null);
+  const recorderRef = useRef(new vmsg.Recorder({ wasmURL: "https://unpkg.com/vmsg@0.3.0/vmsg.wasm" }));
+
+  const handleCamToggle = () => {
+    setIsCamOpen((prev) => !prev);
+  };
+
+  const handleTakePhoto = async (dataUri) => {
+    const blob = await fetch(dataUri).then(res => res.blob());
+    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+    setCamImg(file);
+    setIsCamOpen(false);
+  };
 
   const imageUpload = async () => {
     let imgUrl = null;
     try {
       if (img.file) {
         imgUrl = await upload(img.file);
-        console.log('Image URL:', imgUrl);
+      } else if (camImg) {
+        imgUrl = await upload(camImg);
+      }
+
+      if (imgUrl) {
         await updateDoc(doc(db, 'chats', chatId), {
           messages: arrayUnion({
             senderId: currentUser.id,
             text,
             createdAt: new Date(),
-            ...(imgUrl && { img: imgUrl }),
+            img: imgUrl,
           }),
         });
-        setImg({
-          file: null,
-          url: '',
-        });
+
+        setImg({ file: null, url: '' });
+        setCamImg(null);
       }
     } catch (err) {
       console.log(err);
     }
+  };
 
-  }
+  const audioUpload = async () => {
+    try {
+      if (audioBlob) {
+        const audioUrl = await upload(audioBlob);
+        await updateDoc(doc(db, 'chats', chatId), {
+          messages: arrayUnion({
+            senderId: currentUser.id,
+            text,
+            createdAt: new Date(),
+            audio: audioUrl,
+          }),
+        });
+        setAudioBlob(null);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
 
+  const handleRecord = async () => {
+    setIsLoading(true);
+    const recorder = recorderRef.current;
+
+    if (isRecording) {
+      const blob = await recorder.stopRecording();
+      setAudioBlob(blob);
+      setIsRecording(false);
+      setIsLoading(false);
+    } else {
+      try {
+        await recorder.initAudio();
+        await recorder.initWorker();
+        recorder.startRecording();
+        setIsRecording(true);
+        setIsLoading(false);
+      } catch (err) {
+        setIsLoading(false);
+        console.log(err);
+      }
+    }
+  };
+
+  const audioUploadCancel = () => {
+    setAudioBlob(null);
+  };
   const imageUploadCancel = () => {
-    setImg({
-      file: null,
-      url: '',
-    });
-  }
-
+    setImg({ file: null, url: '' });
+  };
 
   const handleSend = async () => {
     if (text === '') return '';
-
-    console.log(text);
 
     try {
       await updateDoc(doc(db, 'chats', chatId), {
         messages: arrayUnion({
           senderId: currentUser.id,
           text,
-          createdAt: new Date()
+          createdAt: new Date(),
         }),
       });
-
     } catch (err) {
       console.error("Error updating user chats:", err);
     }
 
     setText('');
   };
-
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -125,17 +177,27 @@ function Chat() {
           <div className={message.senderId === currentUser?.id ? "message own" : "message"} key={message?.createdAt?.seconds}>
             <div className="texts">
               {message.img && < img src={message.img} alt="" />}
-              {message?.text?.length != 0 && <p>{message.text}</p>}
+              {message.audio && <audio controls src={message.audio}></audio>}
+              {message?.text?.length !== 0 && <p>{message.text}</p>}
               <span>{new Date(message.createdAt.seconds * 1000).toLocaleString()}</span>
             </div>
           </div>
         ))}
-        {img.file && (
+        {(img.file || camImg) && (
           <div className="preview-container">
-            <img src={img.url} alt="Preview" className="preview-image" />
+            <img src={img.file ? img.url : URL.createObjectURL(camImg)} alt="Preview" className="preview-image" />
             <div className="preview-buttons">
               <button onClick={imageUploadCancel}>Cancel</button>
               <button onClick={imageUpload}>Send</button>
+            </div>
+          </div>
+        )}
+        {audioBlob && (
+          <div className="preview-container">
+            <audio controls src={URL.createObjectURL(audioBlob)} className="preview-audio"></audio>
+            <div className="preview-buttons">
+              <button onClick={audioUploadCancel}>Cancel</button>
+              <button onClick={audioUpload}>Send</button>
             </div>
           </div>
         )}
@@ -147,8 +209,14 @@ function Chat() {
             <img src="./img.png" alt="" />
           </label>
           <input type="file" id="file" style={{ display: 'none' }} onChange={handleImg} />
-          <img src="./camera.png" alt="" />
-          <img src="./mic.png" alt="" />
+          <img src="./camera.png" alt="" onClick={handleCamToggle} />
+          {isCamOpen && (
+            <div className="camera-container">
+              <Camera onTakePhoto={(dataUri) => handleTakePhoto(dataUri)} />
+              <button className="camera-close-button" onClick={handleCamToggle}>Close Camera</button>
+            </div>
+          )}
+          <img src={isRecording ? "./images.jpg" : "./mic.png"} alt="" onClick={handleRecord} disabled={isLoading} />
         </div>
         <input type="text" placeholder="type a message..." onChange={(e) => setText(e.target.value)} value={text} />
         <div className="emoji">
