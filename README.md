@@ -1,8 +1,29 @@
-# React + Vite
+# Quick Chat | Real-Time Chat Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A real-time chat application built with React, styled using CSS, and using Firebase for authentication and database management. This app allows users to sign in, join chat rooms, and send messages in real-time, including images, files, and audio recordings.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- User authentication with Firebase Authentication
+- Real-time messaging with Firebase Realtime Database
+- Send and receive text messages
+- Upload and share images
+- Share files (e.g., PDFs, DOCs)
+- Record and share audio messages
+- Responsive design
+- Simple and intuitive UI
+
+## Tech Stack
+
+- **Frontend**: React, HTML, CSS, JavaScript
+- **Backend**: Firebase (Authentication, Realtime Database, Storage)
+
+## Getting Started
+
+To get started with this project, follow these steps:
+
+### Prerequisites
+
+- Node.js (version 14 or later)
+- npm (or yarn)
+- Firebase account
